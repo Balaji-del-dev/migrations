@@ -28,12 +28,16 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Syntax check
+        run: |
+          python -m py_compile $(git ls-files '*.py')
+
       - name: Lint code
         run: |
           pip install flake8
-          flake8 . || echo "Lint errors found"
+          flake8 .
 
       - name: Run tests
         run: |
           pip install pytest
-          pytest -q || echo "No tests found, skipping"
+          pytest -q
