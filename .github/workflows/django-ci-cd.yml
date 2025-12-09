@@ -27,7 +27,7 @@ jobs:
 
     - name: Run Django Tests
       run: |
-        cd simple-django-app
+        cd simple-django-app/dj_app
         python manage.py test
 
 
