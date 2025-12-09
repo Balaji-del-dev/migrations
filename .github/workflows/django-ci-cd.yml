@@ -1,0 +1,75 @@
+name: Simple Django CI/CD
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+
+  ci:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run Django Tests
+      run: python manage.py test
+
+    - name: Run flake8 Lint
+      run: |
+        pip install flake8
+        flake8 .
+
+  cd:
+    name: Deploy to Server
+    needs: ci
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+
+    - name: Add SSH key
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: ${{ secrets.SSH_KEY }}
+
+    - name: Deploy to Ubuntu Server
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
+          echo '--- Pull latest code ---'
+          if [ ! -d /var/www/simple-django-app ]; then
+            git clone https://github.com/${{ github.repository }} /var/www/simple-django-app
+          fi
+
+          cd /var/www/simple-django-app
+          git pull
+
+          echo '--- Setup virtualenv ---'
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+          echo '--- Apply migrations ---'
+          python manage.py migrate
+
+          echo '--- Collect static ---'
+          python manage.py collectstatic --noinput
+
+          echo '--- Restart Django Server ---'
+          pkill -f runserver || true
+          nohup venv/bin/python manage.py runserver 0.0.0.0:8000 &
+        "
