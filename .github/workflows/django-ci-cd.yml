@@ -73,8 +73,3 @@ jobs:
           pkill -f runserver || true
           nohup venv/bin/python simple-django-app/manage.py runserver 0.0.0.0:8000 &
         "
-
-
-
-
-
