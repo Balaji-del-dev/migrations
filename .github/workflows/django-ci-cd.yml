@@ -1,75 +1,82 @@
-name: Simple Django CI/CD
+name: Django CI/CD Pipeline
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
 
 jobs:
-
+# -------------------- #
+# CI JOB (TESTING)     #
+# -------------------- #
   ci:
-    name: Run Tests
+    name: Django CI - Tests
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.12"   # Django 5.x works
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
 
-    - name: Install dependencies
-      run: |
-        cd simple-django-app
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+      - name: Install Dependencies
+        run: |
+          cd migrations/simple-django-app
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-    - name: Run Django Tests
-      run: |
-        cd simple-django-app/dj_app
-        python manage.py test
+      - name: Run Django Tests
+        run: |
+          cd migrations/simple-django-app/dj_app
+          python manage.py test
 
-
+# -------------------- #
+# CD JOB (DEPLOYMENT)  #
+# -------------------- #
   cd:
-    name: Deploy to Server
+    name: Django CD - Deploy to EC2
     needs: ci
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repo
-      uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-    - name: Add SSH key
-      uses: webfactory/ssh-agent@v0.9.0
-      with:
-        ssh-private-key: ${{ secrets.SSH_KEY }}
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
 
-    - name: Deploy to Ubuntu Server
-      run: |
-        ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
-          echo '--- Pull latest code ---'
-          if [ ! -d /var/www/simple-django-app ]; then
-            git clone https://github.com/${{ github.repository }} /var/www/simple-django-app
-          fi
+      - name: Deploy to EC2 Server
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
+            set -e
 
-          cd /var/www/simple-django-app
-          git pull
+            echo '--- Go to Project Directory ---'
+            cd /var/www/simple-django-app
 
-          echo '--- Setup virtualenv ---'
-          python3 -m venv venv
-          source venv/bin/activate
+            echo '--- Pull Latest Code ---'
+            git pull origin main
 
-          pip install --upgrade pip
-          pip install -r simple-django-app/requirements.txt
+            echo '--- Activate Virtualenv ---'
+            cd migrations/simple-django-app
+            source env/bin/activate
 
-          echo '--- DB Migrations ---'
-          python simple-django-app/manage.py migrate
+            echo '--- Install Requirements ---'
+            pip install --upgrade pip
+            pip install -r requirements.txt
 
-          echo '--- Collect Static ---'
-          python simple-django-app/manage.py collectstatic --noinput
+            echo '--- Django Migrations ---'
+            cd dj_app
+            python manage.py migrate
+            python manage.py collectstatic --noinput
 
-          echo '--- Restart Django server ---'
-          pkill -f runserver || true
-          nohup venv/bin/python simple-django-app/manage.py runserver 0.0.0.0:8000 &
-        "
+            echo '--- Restart Services ---'
+            sudo systemctl restart gunicorn
+            sudo systemctl restart nginx
+
+            echo '--- Deployment Successful ---'
+          "
