@@ -81,7 +81,6 @@ jobs:
             python manage.py migrate
 
             echo '--- Restart Services ---'
-            python3 manage.py runserver 0.0.0.0:8000
 
             echo '--- Deployment Successful ---'
           "
