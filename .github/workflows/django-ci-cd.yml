@@ -79,14 +79,9 @@ jobs:
             echo '--- Django Migrations & Static Files ---'
             cd dj_app
             python manage.py migrate
-            python manage.py collectstatic --noinput
 
             echo '--- Restart Services ---'
-            sudo systemctl restart gunicorn
-            sudo systemctl restart nginx
+            python3 manage.py runserver 0.0.0.0:8000
 
             echo '--- Deployment Successful ---'
           "
-
-
-
