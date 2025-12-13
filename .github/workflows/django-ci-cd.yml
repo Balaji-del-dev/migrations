@@ -1,6 +1,43 @@
+name: Django CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+# -------------------- #
+# CI JOB (GITHUB)      #
+# -------------------- #
+  ci:
+    name: Django CI - Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Show Repo Structure (Debug)
+        run: ls -R
+
+      - name: Install Dependencies
+        run: |
+          cd simple-django-app
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Django Tests
+        run: |
+          cd simple-django-app/dj_app
+          python manage.py test
 
 # -------------------- #
-# CD JOB (DEPLOYMENT)  #
+# CD JOB (EC2 SERVER)  #
 # -------------------- #
   cd:
     name: Django CD - Deploy to EC2
