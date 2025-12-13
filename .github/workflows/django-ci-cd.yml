@@ -64,14 +64,19 @@ jobs:
             echo '--- Pull Latest Code ---'
             git pull origin main
 
+            echo '--- Create Virtualenv if Missing ---'
+            if [ ! -d env ]; then
+                python3.12 -m venv env
+            fi
+
             echo '--- Activate Virtualenv ---'
             source env/bin/activate
 
-            echo '--- Install Requirements ---'
+            echo '--- Upgrade pip & Install Requirements ---'
             pip install --upgrade pip
             pip install -r requirements.txt
 
-            echo '--- Django Migrations ---'
+            echo '--- Django Migrations & Static Files ---'
             cd dj_app
             python manage.py migrate
             python manage.py collectstatic --noinput
