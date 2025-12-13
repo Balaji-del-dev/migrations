@@ -7,7 +7,7 @@ on:
 
 jobs:
 # -------------------- #
-# CI JOB (GITHUB)      #
+# CI JOB (TESTING)     #
 # -------------------- #
   ci:
     name: Django CI - Tests
@@ -22,7 +22,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Show Repo Structure (Debug)
+      - name: Show Repo Structure (Optional Debug)
         run: ls -R
 
       - name: Install Dependencies
@@ -37,7 +37,7 @@ jobs:
           python manage.py test
 
 # -------------------- #
-# CD JOB (EC2 SERVER)  #
+# CD JOB (DEPLOYMENT)  #
 # -------------------- #
   cd:
     name: Django CD - Deploy to EC2
@@ -59,13 +59,12 @@ jobs:
             set -e
 
             echo '--- Go to Project Directory ---'
-            cd /var/www/simple-django-app
+            cd /var/www/simple-django-app/migrations/simple-django-app
 
             echo '--- Pull Latest Code ---'
             git pull origin main
 
             echo '--- Activate Virtualenv ---'
-            cd migrations/simple-django-app
             source env/bin/activate
 
             echo '--- Install Requirements ---'
